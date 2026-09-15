@@ -1,0 +1,40 @@
+name: Build executables
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: DungeonStrike3D-windows-exe
+            path: dist/DungeonStrike3D.exe
+          - os: macos-latest
+            artifact: DungeonStrike3D-macos-app
+            path: dist/DungeonStrike3D.app
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pygame pyinstaller
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name DungeonStrike3D main.py
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: pyinstaller --noconfirm --clean --windowed --name DungeonStrike3D main.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.path }}
+          if-no-files-found: error
